@@ -42,6 +42,12 @@
 #   --owner: is a regular expression.  A coverpoint is retained if its
 #     "full name" field matches the regexp.
 #
+#   --separator: is a character/regexp used to split 'list' arguments
+#     (such as '--tla ..', '--sha ...', etc.
+#     This may be useful to pass a delimited list to select.pm arguments
+#     in a comma-separated list of genhaml arguments - for example:
+#        genhtml ... --select-script select,pm,--sep,;,--tla,LBC;UNC
+#
 #   When multiple selection criteria are applied (e.g., both age and owner),
 #   then The coverpoint is retained if any of criteria match.
 #
@@ -67,6 +73,17 @@ use constant {
               SHA   => 3,
 };
 
+sub intersect
+{
+    my $l = shift;
+    my $m = shift;
+
+    my %contains;
+    @contains{@$l} = (1) x @$l;
+
+    return grep { $contains{$_} } @$m;
+}
+
 sub new
 {
     my $class  = shift;
@@ -77,12 +94,14 @@ sub new
     my $exe        = basename($script ? $script : $0);
     my $standalone = $script eq $0;
     my $help;
+    my $delim = ',';
     if (!GetOptionsFromArray(\@_,
-                             ("range:s"  => \@range,
-                              'tla:s'    => \@tla,
-                              'owner:s'  => \@owner,
-                              'sha|cl:s' => \@sha,
-                              'help'     => \$help)) ||
+                             ("range:s"     => \@range,
+                              'tla:s'       => \@tla,
+                              'owner:s'     => \@owner,
+                              'sha|cl:s'    => \@sha,
+                              'separator:s' => \$delim,
+                              'help'        => \$help)) ||
         $help ||
         (!$standalone && 0 != scalar(@_)) ||
         0 == scalar(@args)    # expect at least one selection  criteria
@@ -94,6 +113,7 @@ usage: $exe
        [--tla tla]*
        [--sha sha]*
        [--cl changelist]*
+       [--separagor char]
 
 Line is selected (return true) if any of the criteria match
 EOF
@@ -109,8 +129,9 @@ EOF
                 join(' ', @args) . '"');
         }
     }
-    @sha = split(',', join(',', @sha));
-    @tla = split(',', join(',', @tla));
+    @sha   = split($delim, join($delim, @sha));
+    @tla   = split($delim, join($delim, @tla));
+    @range = split($delim, join($delim, @range));
     foreach my $tla (@tla) {
         die("invalid tla '$tla' in \"$exe " . join(' ', @args) . '"')
             unless grep(/$tla/, keys(%lcovutil::tlaColor));
@@ -126,6 +147,34 @@ EOF
             unless $min <= $max;
         $range = [$min, $max];
     }
+    # some error checking:
+    #  - can't look for date range, CL/SHA, or owner if there are no
+    #    annotations (so verify that there is an annotation script).
+    #  - without baseline data, there will be no coverage data other
+    #    than GNC, UNC.
+    #  - without 'diff' data, there will be no coverage data in
+    #    GNC, UNC, DUB, or DCB categories
+    if (!@SourceFile::annotateScript && (@range || @owner || @sha)) {
+        lcovutil::ignorable_error($lcovutil::ERROR_USAGE,
+                    "cannot select date/owner/SHA without '--annotate-script'");
+    }
+    my @intersect = intersect(['UBC', 'GBC', 'LBC', 'CBC', 'ECB', 'EUB',
+                               'GIC', 'UIC', 'DCB', 'DUB'
+                              ],
+                              \@tla) unless @main::base_filenames;
+    lcovutil::ignorable_error($lcovutil::ERROR_USAGE,
+        "Will never see TLA other than 'UNC', 'GNC' without 'baseline' coverage data"
+    ) if (@intersect);
+
+    my @intersect2 = intersect(['GNC', 'UNC', 'DCB', 'DUB'], \@tla)
+        unless $main::diff_filename;
+    lcovutil::ignorable_error($lcovutil::ERROR_USAGE,
+                              "Will never see '" .
+                                  join("', '", @intersect2) . "' " .
+                                  ($#intersect2 ? 'categories' : 'category') .
+                                  ' without --diff-file data')
+        if (@intersect2);
+
     my $self = [\@range, \@tla, \@owner, \@sha];
     return bless $self, $class;
 }
