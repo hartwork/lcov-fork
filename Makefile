@@ -279,8 +279,8 @@ check:
 	  $(MAKE) -s -C example LCOV_HOME=`pwd`;   \
 	  $(MAKE) -s -C tests report ;             \
 	fi
-	grep uninitialized tests/test.log ; \
-	@if [ 1 != $$? ] ; then             \
+	@grep -q -F uninitialized tests/test.log ; \
+	if [ 1 != $$? ] ; then             \
 	   echo "found 'uninitialized'" ;   \
 	fi
 
