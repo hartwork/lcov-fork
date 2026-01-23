@@ -268,19 +268,19 @@ test: check
 # for COVERAGE mode check: run once with LCOV_FORCE_PARALLEL=1 and
 #   once without - so we can merge the result
 check:
-	set -x; if [ "x$(COVERAGE)" != 'x' ] ; then                                 \
+	if [ "x$(COVERAGE)" != 'x' ] ; then                                 \
 	  mkdir -p $(COVER_DB) ;                                            \
 	  echo "*** Run once, force parallel ***" ;                         \
 	  LCOV_FORCE_PARALLEL=1 $(MAKE) -s -C tests check LCOV_HOME=`pwd` ; \
 	  echo "*** Run again, no force ***" ;                              \
 	fi
-	$(MAKE) -s -C tests check LCOV_HOME=`pwd`
-	set -x; if [ "x$(COVERAGE)" != 'x' ] ; then       \
+	@$(MAKE) -s -C tests check LCOV_HOME=`pwd`
+	@if [ "x$(COVERAGE)" != 'x' ] ; then       \
 	  $(MAKE) -s -C example LCOV_HOME=`pwd`;   \
 	  $(MAKE) -s -C tests report ;             \
 	fi
 	grep uninitialized tests/test.log ; \
-	set -x; if [ 1 != $$? ] ; then             \
+	@if [ 1 != $$? ] ; then             \
 	   echo "found 'uninitialized'" ;   \
 	fi
 
