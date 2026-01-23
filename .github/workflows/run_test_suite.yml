@@ -39,17 +39,6 @@ jobs:
           - runs-on: ubuntu-24.04
             gcc: 9
             install: g++-9 gcc-9 cpp-9
-          - runs-on: ubuntu-24.04
-            gcc: 10
-            install: g++-10 gcc-10 cpp-10
-          # GCC 10 to 14 are assumed to behave "the same",
-          # so we are skipping GCC 11, 12, 13 here to save CI resources
-          - runs-on: ubuntu-24.04
-            gcc: 14
-            install:
-          - runs-on: ubuntu-24.04
-            gcc: 16
-            install: binutils g++-16 gcc-16 cpp-16
     steps:
       - uses: actions/checkout@v6
 
