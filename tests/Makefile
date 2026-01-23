@@ -21,7 +21,7 @@ TESTS := genhtml lcov gendiffcov llvm2lcov py2lcov perl2lcov xml2lcov
 #  potential remote repo timestamp issue
 report:
 	$(SPREADSHEET_TOOL) -o report.xlsx `find . -name "*.json"`
-	set -x ; echo D ; if [ "x$(COVERAGE)" != 'x' ] ; then                         \
+	if [ "x$(COVERAGE)" != 'x' ] ; then                         \
 	  cover $(COVER_DB) ;                                       \
 	  $(BINDIR)/perl2lcov -o perlcov.info $(COVER_DB)           \
                --version-script $(VERSION_SCRIPT)                   \
@@ -31,7 +31,7 @@ report:
                --omit-lines 'ERROR_INTERNAL' --omit-lines '\bdie\b' \
 	       --ignore unsupported,unused,inconsistent             \
                --filter region ;                                    \
-	  set -x ; echo E ; if [ -f $(PYCOV_DB) ] ; then                              \
+	  if [ -f $(PYCOV_DB) ] ; then                              \
 	    $(BINDIR)/py2lcov -o pycov.info $(PYCOV_DB)             \
                  --version-script $(VERSION_SCRIPT) ;               \
 	  fi ;                                                      \
